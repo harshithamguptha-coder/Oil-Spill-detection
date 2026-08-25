@@ -5,6 +5,8 @@ __pycache__/
 *.pyo
 
 data/
+!data/
+!data/ais_demo_tracks.csv
 outputs/
 *.tif
 *.tiff
