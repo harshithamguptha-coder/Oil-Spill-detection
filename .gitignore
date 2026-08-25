@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+data/
+outputs/
+*.tif
+*.tiff
+*.png
+.env
+.env.*
+*.pem
+*.key
+secrets/
