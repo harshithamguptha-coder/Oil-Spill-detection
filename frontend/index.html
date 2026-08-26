@@ -1,0 +1,248 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SLICKTRACE AI – Satellite Maritime Intelligence & Vessel Attribution</title>
+  
+  <!-- Leaflet GIS Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  
+  <!-- Application CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+
+    <!-- 1. Top Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo-badge">🛰️</div>
+        <div class="brand-text-group">
+          <div class="brand-title">
+            SLICKTRACE AI
+            <span class="brand-org-tag">OrbitalWatch</span>
+          </div>
+          <div class="brand-subtitle">Satellite Oil-Spill Detection &amp; Explainable Vessel Attribution</div>
+        </div>
+      </div>
+      <div class="header-status-badge">
+        <span class="pulse-led"></span>
+        LIVE DEMO / PROTOTYPE
+      </div>
+    </header>
+
+    <!-- 2. Investigation Status Bar -->
+    <section class="investigation-status-bar" aria-label="Investigation Metadata">
+      <div class="status-metric">
+        <span class="metric-tag">Case ID:</span>
+        <span class="metric-data" id="meta-case-id">SAR-2026-01339</span>
+      </div>
+      <div class="status-metric">
+        <span class="metric-tag">Observation:</span>
+        <span class="metric-data">Sentinel-1 SAR C-Band</span>
+      </div>
+      <div class="status-metric">
+        <span class="metric-tag">Detection:</span>
+        <span class="status-chip danger" id="meta-detect-status">SUSPECTED SLICK</span>
+      </div>
+      <div class="status-metric">
+        <span class="metric-tag">AIS Analysis:</span>
+        <span class="status-chip cyan" id="meta-ais-count">10 VESSELS CORRELATED</span>
+      </div>
+      <div class="status-metric">
+        <span class="metric-tag">Status:</span>
+        <span class="metric-data" style="color: var(--cyan-bright);">ATTRIBUTION ACTIVE</span>
+      </div>
+    </section>
+
+    <!-- 3. Workflow Progression Strip -->
+    <section class="workflow-strip" aria-label="Investigation Workflow">
+      <span class="wf-header-title">Workflow:</span>
+      <div class="wf-pill passed"><span>✓</span> 1. SAR Ingest</div>
+      <span class="wf-connector">➔</span>
+      <div class="wf-pill passed"><span>✓</span> 2. Slick Mask</div>
+      <span class="wf-connector">➔</span>
+      <div class="wf-pill passed"><span>✓</span> 3. AIS Intercept</div>
+      <span class="wf-connector">➔</span>
+      <div class="wf-pill current"><span>★</span> 4. Attribution Rank</div>
+      <span class="wf-connector">➔</span>
+      <div class="wf-pill">5. Drift Forecast</div>
+      <span class="wf-connector">➔</span>
+      <div class="wf-pill">6. Evidence Report</div>
+    </section>
+
+    <!-- 4. KPI Summary Cards Grid -->
+    <section class="kpi-row" id="info">
+      <!-- Populated dynamically via script.js -->
+    </section>
+
+    <!-- 5. Main Content Grid -->
+    <div class="workspace-grid">
+
+      <!-- Interactive GIS Map Section (Full Width Centerpiece) -->
+      <section class="gis-panel col-full">
+        <div class="gis-panel-header">
+          <div class="gis-panel-title">
+            <span>🗺️</span> INTERACTIVE GEOSPATIAL MAP
+            <span class="gis-panel-subtitle">— Navigable Satellite Maritime Domain Awareness</span>
+          </div>
+        </div>
+
+        <!-- Tactical Map Toolbar -->
+        <div class="map-toolbar">
+          <div class="map-basemap-selector">
+            <span>Basemap:</span>
+            <button class="btn-basemap active" id="btn-bm-light" data-bm="light">Light Map</button>
+            <button class="btn-basemap" id="btn-bm-sat" data-bm="sat">Satellite</button>
+            <button class="btn-basemap" id="btn-bm-dark" data-bm="dark">Dark Map</button>
+          </div>
+
+          <div class="map-layer-toggles">
+            <label class="layer-toggle-label">
+              <input type="checkbox" id="layer-radius" checked> 15 km Radius
+            </label>
+            <label class="layer-toggle-label">
+              <input type="checkbox" id="layer-spill" checked> Spill Extent
+            </label>
+            <label class="layer-toggle-label">
+              <input type="checkbox" id="layer-tracks" checked> Vessel Tracks
+            </label>
+            <label class="layer-toggle-label">
+              <input type="checkbox" id="layer-labels" checked> Vessel Labels
+            </label>
+          </div>
+
+          <div class="map-view-actions">
+            <button class="btn-map-action" id="btn-focus-spill" title="Center map on oil spill investigation area">🎯 Focus Spill Area</button>
+            <button class="btn-map-action" id="btn-world-view" title="Reset map to world overview">🌐 World Overview</button>
+          </div>
+        </div>
+
+        <!-- Real Leaflet Interactive Map Viewport -->
+        <div id="gis-map-viewport"></div>
+
+        <!-- Map Legend Bar -->
+        <div class="map-legend-bar">
+          <span class="legend-chip"><i class="legend-dot red"></i> HIGH RISK (≥80)</span>
+          <span class="legend-chip"><i class="legend-dot amber"></i> MEDIUM RISK (60–79)</span>
+          <span class="legend-chip"><i class="legend-dot green"></i> LOW RISK (&lt;60)</span>
+          <span class="legend-chip">🛢️ ESTIMATED SPILL ORIGIN</span>
+          <span class="legend-chip">⭕ 15 KM SEARCH BOUNDARY</span>
+          <span class="legend-chip">🎯 ACTIVE REPLAY POSITION</span>
+        </div>
+      </section>
+
+      <!-- Ranked Vessel Candidates Table (Left Column) -->
+      <section class="gis-panel">
+        <div class="gis-panel-header">
+          <div class="gis-panel-title">
+            <span>⚓</span> RANKED VESSEL CANDIDATES
+            <span class="gis-panel-subtitle">— Click row for forensic evidence · Click headers to sort</span>
+          </div>
+        </div>
+        <div class="gis-panel-body" style="padding: 0;">
+          <div class="table-scroll-wrap">
+            <table class="candidate-data-table">
+              <thead>
+                <tr>
+                  <th data-k="rank">Rank <span class="sort-arrow" id="sort-rank"></span></th>
+                  <th data-k="vessel_name">Vessel <span class="sort-arrow" id="sort-vessel_name"></span></th>
+                  <th data-k="final_score">Score <span class="sort-arrow" id="sort-final_score">▼</span></th>
+                  <th data-k="risk">Risk <span class="sort-arrow" id="sort-risk"></span></th>
+                  <th data-k="closest_distance_km">Distance <span class="sort-arrow" id="sort-closest_distance_km"></span></th>
+                  <th data-k="time_gap_minutes">Time Gap <span class="sort-arrow" id="sort-time_gap_minutes"></span></th>
+                  <th data-k="track_alignment">Alignment <span class="sort-arrow" id="sort-track_alignment"></span></th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                <!-- Populated dynamically via script.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Forensic Evidence & Score Breakdown Panel (Right Column) -->
+      <section class="gis-panel">
+        <div class="gis-panel-header">
+          <div class="gis-panel-title">
+            <span>🔬</span> FORENSIC EVIDENCE &amp; EXPLAINABILITY
+            <span class="gis-panel-subtitle">— Multi-factor attribution score decomposition</span>
+          </div>
+        </div>
+        <div class="gis-panel-body">
+          <div id="evidence" class="evidence-stack">
+            <!-- Populated dynamically via script.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- AIS Temporal Track Replay (Full Width) -->
+      <section class="gis-panel col-full">
+        <div class="gis-panel-header">
+          <div class="gis-panel-title">
+            <span>⏱️</span> AIS TEMPORAL TRACK REPLAY
+            <span class="gis-panel-subtitle">— Interactive trajectory scrubbing and historical passage simulation</span>
+          </div>
+        </div>
+        <div class="gis-panel-body">
+          <div class="replay-deck">
+            <div class="replay-header-row">
+              <div class="replay-vessel-selector">
+                <label for="vessel">Target Vessel:</label>
+                <select id="vessel" class="replay-dropdown"></select>
+              </div>
+
+              <div class="replay-transport-buttons">
+                <button class="btn-transport" id="btn-step-prev" title="Step to previous waypoint">◀ Prev</button>
+                <button class="btn-transport play-btn" id="play">▶ Play</button>
+                <button class="btn-transport" id="btn-step-next" title="Step to next waypoint">Next ▶</button>
+              </div>
+
+              <div class="speed-selector-group">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-right: 4px;">SPEED:</span>
+                <button class="btn-speed active" data-speed="700">1×</button>
+                <button class="btn-speed" data-speed="350">2×</button>
+                <button class="btn-speed" data-speed="140">5×</button>
+              </div>
+            </div>
+
+            <div class="timeline-scrubber-row">
+              <input id="time" class="replay-slider" type="range" min="0" value="0">
+            </div>
+
+            <div class="replay-telemetry-strip">
+              <span id="waypoint-meta">Waypoint <b id="current-step">0</b> of <b id="total-steps">0</b></span>
+              <span>UTC Timestamp: <output id="stamp"></output></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 6. Legal / Investigation Disclaimer Banner -->
+    <div class="legal-disclaimer-card">
+      <div class="legal-disclaimer-icon">⚠️</div>
+      <div class="legal-disclaimer-text">
+        <strong>LEGAL &amp; INVESTIGATION NOTICE</strong>
+        Attribution scores represent heuristic spatio-temporal correlation derived from satellite SAR observations and AIS positional broadcasts for investigative prioritization. They provide objective decision support for maritime authorities and do not establish formal legal liability or proof of regulatory violation.
+      </div>
+    </div>
+
+    <!-- 7. Footer -->
+    <footer class="app-footer">
+      <div>SLICKTRACE AI v2.4 · Powered by OrbitalWatch Intelligence Platform</div>
+      <div>Offline Edge Architecture · SIH 2026 Demonstration</div>
+    </footer>
+
+  </div>
+
+  <!-- Leaflet GIS Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Application Client Script -->
+  <script src="script.js"></script>
+</body>
+</html>

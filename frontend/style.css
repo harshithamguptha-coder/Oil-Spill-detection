@@ -1,0 +1,1129 @@
+﻿/* ==========================================================================
+   SLICKTRACE AI — Professional Satellite Maritime Intelligence Theme
+   Theme: Hybrid GIS Console (Dark Navy Structure + Crisp White/Light Workspace)
+   ========================================================================== */
+
+:root {
+  /* Dark Navy Primary Structural Colors */
+  --navy-darkest: #061325;
+  --navy-primary: #0a1f38;
+  --navy-secondary: #0f2c4f;
+  --navy-surface: #153a66;
+  --navy-border: #1e4b80;
+
+  /* Light Workspace Background & Card Colors */
+  --bg-page: #f0f4f8;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f8fafc;
+  --border-light: #cbd5e1;
+  --border-card: #e2e8f0;
+  --border-focus: #0284c7;
+
+  /* Typography Colors */
+  --text-dark: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --text-light: #f8fafc;
+  --text-light-muted: #94a3b8;
+
+  /* Accent Colors */
+  --cyan-bright: #00b4d8;
+  --cyan-glow: rgba(0, 180, 216, 0.3);
+  --blue-primary: #0284c7;
+  --blue-hover: #0369a1;
+
+  /* Risk Classification Palette */
+  --risk-high: #dc2626;
+  --risk-high-bg: #fee2e2;
+  --risk-high-border: #fca5a5;
+  --risk-high-text: #991b1b;
+
+  --risk-med: #d97706;
+  --risk-med-bg: #fef3c7;
+  --risk-med-border: #fcd34d;
+  --risk-med-text: #92400e;
+
+  --risk-low: #16a34a;
+  --risk-low-bg: #dcfce7;
+  --risk-low-border: #86efac;
+  --risk-low-text: #166534;
+
+  /* Fonts */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-wrapper {
+  max-width: 1650px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+/* ==========================================================================
+   1. Header Bar (Dark Navy, High Authority GIS Branding)
+   ========================================================================== */
+header.app-header {
+  background: linear-gradient(135deg, var(--navy-darkest) 0%, var(--navy-primary) 100%);
+  border: 1px solid var(--navy-border);
+  border-radius: 10px;
+  padding: 16px 24px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-logo-badge {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(0, 180, 216, 0.25) 0%, rgba(2, 132, 199, 0.4) 100%);
+  border: 1.5px solid var(--cyan-bright);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 0 12px var(--cyan-glow);
+}
+
+.brand-text-group .brand-title {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-title .brand-org-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan-bright);
+  background: rgba(0, 180, 216, 0.15);
+  border: 1px solid rgba(0, 180, 216, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  color: var(--text-light-muted);
+  margin-top: 2px;
+}
+
+.header-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 163, 74, 0.15);
+  border: 1px solid rgba(22, 163, 74, 0.45);
+  color: #4ade80;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.4px;
+}
+
+.pulse-led {
+  width: 7px;
+  height: 7px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #22c55e;
+  animation: ledPulse 2s infinite ease-in-out;
+}
+
+@keyframes ledPulse {
+  0% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 10px #22c55e; }
+  100% { opacity: 0.6; transform: scale(0.9); }
+}
+
+/* ==========================================================================
+   2. Investigation Status Ribbon
+   ========================================================================== */
+.investigation-status-bar {
+  background: var(--navy-primary);
+  border: 1px solid var(--navy-secondary);
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-metric .metric-tag {
+  color: var(--text-light-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+}
+
+.status-metric .metric-data {
+  color: #ffffff;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.status-chip {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.status-chip.cyan {
+  background: rgba(0, 180, 216, 0.15);
+  border: 1px solid rgba(0, 180, 216, 0.4);
+  color: var(--cyan-bright);
+}
+
+.status-chip.danger {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  color: #f87171;
+}
+
+/* ==========================================================================
+   3. Workflow Step Indicator
+   ========================================================================== */
+.workflow-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.wf-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.wf-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.wf-pill.passed {
+  color: #0369a1;
+  background: #e0f2fe;
+  border-color: #bae6fd;
+}
+
+.wf-pill.current {
+  color: #ffffff;
+  background: var(--navy-primary);
+  border-color: var(--navy-secondary);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+}
+
+.wf-connector {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+/* ==========================================================================
+   4. KPI Cards Grid (White Cards, Deep Navy Metric Text, Crisp Icons)
+   ========================================================================== */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.kpi-card-white {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-top: 3.5px solid var(--blue-primary);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kpi-card-white:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.kpi-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.kpi-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.kpi-card-symbol {
+  font-size: 17px;
+  color: var(--blue-primary);
+}
+
+.kpi-card-number {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text-dark);
+  font-family: var(--font-mono);
+  letter-spacing: -0.5px;
+  margin-bottom: 3px;
+}
+
+.kpi-card-footnote {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.kpi-confidence-track {
+  width: 100%;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.kpi-confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #00b4d8);
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   5. Main Layout Grid (Map, Candidate Table, Evidence, Replay)
+   ========================================================================== */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.col-full {
+  grid-column: 1 / -1;
+}
+
+/* Standard Card Panels */
+.gis-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.gis-panel-header {
+  background: linear-gradient(180deg, var(--navy-primary) 0%, var(--navy-secondary) 100%);
+  color: #ffffff;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gis-panel-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffffff;
+}
+
+.gis-panel-subtitle {
+  font-size: 11px;
+  color: var(--text-light-muted);
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.gis-panel-body {
+  padding: 14px 16px;
+  flex: 1;
+}
+
+/* ==========================================================================
+   6. Leaflet Map Container & Tactical Layer Toolbar
+   ========================================================================== */
+.map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-card);
+  padding: 8px 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.map-basemap-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-basemap-selector span {
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.btn-basemap {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  color: var(--text-body);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-basemap:hover {
+  background: #f1f5f9;
+  border-color: var(--blue-primary);
+}
+
+.btn-basemap.active {
+  background: var(--navy-primary);
+  color: #ffffff;
+  border-color: var(--navy-primary);
+}
+
+.map-layer-toggles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.layer-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-body);
+  user-select: none;
+}
+
+.layer-toggle-label input[type="checkbox"] {
+  accent-color: var(--blue-primary);
+  cursor: pointer;
+}
+
+.map-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-map-action {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  color: var(--blue-primary);
+  padding: 4px 9px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-map-action:hover {
+  background: #e0f2fe;
+  border-color: var(--blue-primary);
+}
+
+/* Map Canvas Container */
+#gis-map-viewport {
+  width: 100%;
+  height: 480px;
+  background: #e2e8f0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Map Legend Box */
+.map-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  border-top: 1px solid var(--border-card);
+  padding: 8px 16px;
+  font-size: 11.5px;
+  color: var(--text-body);
+  flex-wrap: wrap;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.red { background: var(--risk-high); box-shadow: 0 0 4px var(--risk-high); }
+.legend-dot.amber { background: var(--risk-med); box-shadow: 0 0 4px var(--risk-med); }
+.legend-dot.green { background: var(--risk-low); box-shadow: 0 0 4px var(--risk-low); }
+
+/* Custom Leaflet Map Markers & Glows */
+.spill-origin-pulse {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: spillPulse 1.8s infinite;
+}
+
+.spill-origin-pulse::after {
+  content: '🛢️';
+  font-size: 14px;
+}
+
+@keyframes spillPulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+  70% { box-shadow: 0 0 0 14px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.replay-marker-icon {
+  background: #0284c7;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.8), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ==========================================================================
+   7. Ranked Vessel Candidate Table
+   ========================================================================== */
+.table-scroll-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+table.candidate-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12.5px;
+}
+
+table.candidate-data-table th {
+  background: #f1f5f9;
+  color: var(--text-dark);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 9px 12px;
+  border-bottom: 1.5px solid var(--border-light);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+table.candidate-data-table th:hover {
+  background: #e2e8f0;
+  color: var(--blue-primary);
+}
+
+table.candidate-data-table th .sort-arrow {
+  font-size: 10px;
+  color: var(--blue-primary);
+  margin-left: 3px;
+}
+
+table.candidate-data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-card);
+  color: var(--text-body);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+table.candidate-data-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+table.candidate-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+table.candidate-data-table tbody tr.selected-vessel {
+  background-color: #f0f9ff;
+  border-left: 4px solid var(--blue-primary);
+}
+
+table.candidate-data-table tbody tr.top-ranked {
+  background-color: #fffbeb;
+}
+
+table.candidate-data-table tbody tr.top-ranked.selected-vessel {
+  background-color: #eff6ff;
+  border-left: 4px solid var(--blue-primary);
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: var(--text-dark);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.rank-badge.gold {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.vessel-cell-title {
+  font-family: var(--font-sans) !important;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.vessel-cell-id {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  display: block;
+}
+
+/* Risk Badges */
+.risk-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  font-family: var(--font-sans);
+}
+
+.risk-tag.HIGH {
+  background: var(--risk-high-bg);
+  color: var(--risk-high-text);
+  border: 1px solid var(--risk-high-border);
+}
+
+.risk-tag.MEDIUM {
+  background: var(--risk-med-bg);
+  color: var(--risk-med-text);
+  border: 1px solid var(--risk-med-border);
+}
+
+.risk-tag.LOW {
+  background: var(--risk-low-bg);
+  color: var(--risk-low-text);
+  border: 1px solid var(--risk-low-border);
+}
+
+/* ==========================================================================
+   8. Forensic Evidence & Score Breakdown Card
+   ========================================================================== */
+.evidence-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.evidence-hero-box {
+  background: linear-gradient(135deg, var(--navy-primary) 0%, var(--navy-secondary) 100%);
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.vessel-hero-summary h3 {
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vessel-hero-summary .vessel-telemetry {
+  font-size: 11.5px;
+  color: var(--text-light-muted);
+  margin-top: 3px;
+}
+
+.score-hero-block {
+  text-align: right;
+}
+
+.score-hero-digits {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--cyan-bright);
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.score-hero-max {
+  font-size: 12px;
+  color: var(--text-light-muted);
+  font-weight: 500;
+}
+
+.score-hero-caption {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  color: var(--text-light-muted);
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+.findings-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.findings-box-heading {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.findings-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finding-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+.finding-bullet {
+  color: var(--blue-primary);
+  font-weight: bold;
+}
+
+.ais-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-card);
+}
+
+.ais-anomaly-tag {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Score Progress Meters */
+.score-meters-box {
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.meters-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+}
+
+.meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.meter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.meter-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+
+.meter-name {
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.meter-weight-tag {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-left: 3px;
+}
+
+.meter-score-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.meter-base-bar {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.meter-bar-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #00b4d8);
+  border-radius: 3px;
+  transition: width 0.35s ease;
+}
+
+.meter-bar-progress.anomaly-bar {
+  background: linear-gradient(90deg, #d97706, #dc2626);
+}
+
+/* ==========================================================================
+   9. AIS Temporal Replay Console
+   ========================================================================== */
+.replay-deck {
+  background: #f8fafc;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.replay-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.replay-vessel-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.replay-vessel-selector label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-transform: uppercase;
+}
+
+.replay-dropdown {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.replay-transport-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-transport {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-transport:hover {
+  background: #f1f5f9;
+  border-color: var(--blue-primary);
+}
+
+.btn-transport.play-btn {
+  background: var(--blue-primary);
+  color: #ffffff;
+  border-color: var(--blue-primary);
+}
+
+.btn-transport.play-btn:hover {
+  background: var(--blue-hover);
+}
+
+.speed-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #e2e8f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.btn-speed {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-speed.active {
+  background: var(--navy-primary);
+  color: #ffffff;
+}
+
+.timeline-scrubber-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+input[type="range"].replay-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #cbd5e1;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+input[type="range"].replay-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--blue-primary);
+  box-shadow: 0 0 4px rgba(2, 132, 199, 0.6);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+.replay-telemetry-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+output#stamp {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--blue-primary);
+}
+
+/* ==========================================================================
+   10. Disclaimer Banner & Footer
+   ========================================================================== */
+.legal-disclaimer-card {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 11.5px;
+  color: #92400e;
+  line-height: 1.45;
+  box-shadow: var(--shadow-sm);
+}
+
+.legal-disclaimer-icon {
+  font-size: 16px;
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.legal-disclaimer-text strong {
+  color: #78350f;
+  display: block;
+  margin-bottom: 2px;
+}
+
+footer.app-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   11. Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1200px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .workspace-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .app-wrapper { padding: 10px 12px 24px; }
+  .kpi-row { grid-template-columns: 1fr; }
+  #gis-map-viewport { height: 380px; }
+  .brand-text-group .brand-title { font-size: 17px; }
+  .header-status-badge { display: none; }
+  .evidence-hero-box { flex-direction: column; align-items: flex-start; }
+  .score-hero-block { text-align: left; }
+}
