@@ -21,15 +21,17 @@ let vesselMarkers = {}; // keyed by vessel_id
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const API_BASE_URL = window.SLICKTRACE_API_BASE || 'http://127.0.0.1:8000';
+const apiUrl = path => `${API_BASE_URL}${path}`;
 
 // --------------------------------------------------------------------------
 // 1. Data Ingestion from Backend Endpoints
 // --------------------------------------------------------------------------
 Promise.all([
-  fetch('/api/context').then(r => r.json()),
-  fetch('/api/candidates').then(r => r.json()),
-  fetch('/api/tracks').then(r => r.json()),
-  fetch('/api/config').then(r => r.json())
+  fetch(apiUrl('/api/context')).then(r => r.json()),
+  fetch(apiUrl('/api/candidates')).then(r => r.json()),
+  fetch(apiUrl('/api/tracks')).then(r => r.json()),
+  fetch(apiUrl('/api/config')).then(r => r.json())
 ]).then(([s, c, t, cfg]) => {
   spill = s;
   candidates = c;

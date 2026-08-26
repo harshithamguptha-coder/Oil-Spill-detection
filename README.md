@@ -8,12 +8,21 @@ An offline, explainable AIS correlation demo built alongside the existing oil-sp
 
 ## Run
 
+Start the backend API:
+
 ```powershell
-py -m pip install -r requirements.txt
-py app.py
+python -m pip install -r requirements.txt
+python app.py
 ```
 
-Open `http://localhost:8000`. The app uses only local `data/ais_demo_tracks.csv`; it works without a network connection.
+Start the separate frontend server in another terminal:
+
+```powershell
+cd frontend
+python -m http.server 5173
+```
+
+Open `http://127.0.0.1:5173`. The frontend calls the backend API at `http://127.0.0.1:8000`. The app uses only local `data/ais_demo_tracks.csv`; it works without an external AIS provider.
 
 ## What is included
 
