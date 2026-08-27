@@ -48,6 +48,7 @@ Promise.all([
 
   // Populate KPI Summary Cards
   renderKPICards(s);
+  renderDetectionEngine(s);
 
   // Populate Replay Vessel Dropdown
   const vesselSelect = $('#vessel');
@@ -115,6 +116,75 @@ function renderKPICards(s) {
       ${item.hasBar ? `<div class="kpi-confidence-track"><div class="kpi-confidence-fill" style="width: ${item.pct}%;"></div></div>` : ''}
     </div>
   `).join('');
+}
+// --------------------------------------------------------------------------
+// 2B. Detection Engine Output
+// --------------------------------------------------------------------------
+function renderDetectionEngine(s) {
+  const container = $('#detection-engine');
+  if (!container) return;
+
+  const confidence = s.detector_confidence != null
+    ? Math.round(s.detector_confidence * 100)
+    : null;
+
+  const shape = s.shape_score != null
+    ? Math.round(s.shape_score * 100)
+    : null;
+
+  const area = s.area_score != null
+    ? Math.round(s.area_score * 100)
+    : null;
+
+  const fallback = s.fallback_used ? 'YES' : 'NO';
+
+  container.innerHTML = `
+    <div class="detection-metric">
+      <span class="detection-metric-label">DETECTOR STATUS</span>
+      <strong>${esc((s.detector_status || 'UNKNOWN').replace(/_/g, ' ').toUpperCase())}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">PROTOTYPE CONFIDENCE</span>
+      <strong>${confidence != null ? confidence + '%' : 'N/A'}</strong>
+      <div class="detection-mini-track">
+        <div style="width:${confidence != null ? confidence : 0}%"></div>
+      </div>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">DETECTED PIXELS</span>
+      <strong>${Number(s.detected_pixels || 0).toLocaleString()}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">SHAPE SCORE</span>
+      <strong>${shape != null ? shape + '%' : 'N/A'}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">AREA SCORE</span>
+      <strong>${area != null ? area + '%' : 'N/A'}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">SENSITIVITY</span>
+      <strong>${s.detection_sensitivity != null ? s.detection_sensitivity.toFixed(2) : 'N/A'}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">FALLBACK MASK</span>
+      <strong>${fallback}</strong>
+    </div>
+
+    <div class="detection-metric">
+      <span class="detection-metric-label">CENTROID</span>
+      <strong>${s.centroid_pixel
+        ? `[${s.centroid_pixel[0].toFixed(1)}, ${s.centroid_pixel[1].toFixed(1)}]`
+        : 'N/A'}</strong>
+      <small>Pixel coordinates</small>
+    </div>
+  `;
 }
 
 // --------------------------------------------------------------------------

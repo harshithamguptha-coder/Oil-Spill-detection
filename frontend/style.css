@@ -1127,3 +1127,75 @@ footer.app-footer {
   .evidence-hero-box { flex-direction: column; align-items: flex-start; }
   .score-hero-block { text-align: left; }
 }
+/* ==========================================================================
+   Detection Engine Output
+   ========================================================================== */
+
+.detection-engine-panel {
+  margin-bottom: 18px;
+}
+
+.detection-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.detection-metric {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 7px;
+  padding: 12px 14px;
+  min-height: 58px;
+}
+
+.detection-metric-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.detection-metric strong {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text-dark);
+}
+
+.detection-metric small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.detection-mini-track {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  margin-top: 7px;
+  overflow: hidden;
+}
+
+.detection-mini-track div {
+  height: 100%;
+  background: #0284c7;
+  border-radius: 3px;
+}
+
+@media (max-width: 1200px) {
+  .detection-engine-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .detection-engine-grid {
+    grid-template-columns: 1fr;
+  }
+}
