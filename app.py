@@ -1,15 +1,101 @@
 """Offline SlickTrace AIS attribution API with connected investigation workflow."""
 from __future__ import annotations
+
+import base64
 import json
+import struct
+import zlib
+from email.parser import BytesParser
+from email.policy import default
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
+
+import numpy as np
+import rasterio
 
 from services.ais import get_spill_context, load_local_tracks, rank_vessels
 from services.ais.config import DEMO_SPILL_CONTEXT, SEARCH_RADIUS_KM, TIME_WINDOW_MINUTES, WEIGHTS
 from services.ais.replay import replay_payload
 
 ROOT = Path(__file__).parent
+
+
+def _normalize_uint8(array: np.ndarray) -> np.ndarray:
+    """Convert numeric arrays to uint8 for PNG export."""
+    arr = np.asarray(array)
+    if arr.dtype == np.uint8:
+        return arr
+    if arr.dtype.kind in {"f", "i", "u"}:
+        arr = arr.astype(np.float64)
+        finite = np.isfinite(arr)
+        if finite.all():
+            if arr.max() > 1.0:
+                arr = arr / max(float(arr.max()), 1.0)
+            arr = np.clip(arr, 0.0, 1.0)
+            arr = (arr * 255.0).astype(np.uint8)
+            return arr
+    return np.asarray(arr, dtype=np.uint8)
+
+
+def _encode_png_data_url(array: np.ndarray) -> str:
+    """Encode an array as a PNG data URL without adding external dependencies."""
+    rgb = np.asarray(array)
+    if rgb.ndim == 2:
+        rgb = np.repeat(rgb[:, :, None], 3, axis=2)
+    elif rgb.ndim == 3 and rgb.shape[2] == 1:
+        rgb = np.repeat(rgb, 3, axis=2)
+    if rgb.ndim == 3 and rgb.shape[2] == 4:
+        rgb = rgb[:, :, :3]
+    if rgb.dtype != np.uint8:
+        rgb = _normalize_uint8(rgb)
+    height, width, channels = rgb.shape
+    raw = b"".join(b"\x00" + rgb[y].tobytes() for y in range(height))
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack("!I", len(data))
+            + tag
+            + data
+            + struct.pack("!I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack("!IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+    return "data:image/png;base64," + base64.b64encode(png).decode("utf-8")
+
+
+def _tif_to_data_url(image_path: str | Path) -> str:
+    """Convert a TIFF to a displayable PNG data URL."""
+    with rasterio.open(str(image_path)) as src:
+        array = src.read()
+
+    if array.ndim == 2:
+        image = array
+    elif array.shape[0] >= 3:
+        image = np.moveaxis(array[:3], 0, -1)
+    elif array.shape[0] == 1:
+        image = np.repeat(array[0][None, :, :], 3, axis=0).transpose(1, 2, 0)
+    else:
+        image = np.zeros((array.shape[1], array.shape[2], 3), dtype=np.uint8)
+
+    if np.issubdtype(image.dtype, np.floating):
+        image = _normalize_uint8(image)
+    elif image.dtype != np.uint8:
+        image = image.astype(np.uint8)
+    return _encode_png_data_url(image)
+
+
+def _mask_to_data_url(mask: np.ndarray) -> str:
+    """Convert a binary mask into a red-highlight PNG data URL."""
+    binary = np.asarray(mask) > 0
+    color = np.zeros((binary.shape[0], binary.shape[1], 3), dtype=np.uint8)
+    color[binary] = [255, 70, 70]
+    return _encode_png_data_url(color)
 
 
 class InvestigationSession:
@@ -36,6 +122,89 @@ class InvestigationSession:
         self.top_candidate = None
         self.error_message = None
         return self.to_dict()
+
+    def process_uploaded_image(self, image_path: str | Path, original_name: str | None = None) -> dict:
+        """Run the existing detector pipeline on an uploaded .tif/.tiff image."""
+        file_path = Path(image_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Uploaded image '{file_path}' was not found.")
+        if file_path.suffix.lower() not in {".tif", ".tiff"}:
+            raise ValueError("Only .tif and .tiff files are supported.")
+
+        from services.detector import detect_slick
+        from services.geometry import analyze_geometry
+
+        self.image_path = file_path
+        self.case_id = original_name or self.case_id
+        _, meta = __import__("services.preprocessor", fromlist=["load_sar_raster"]).load_sar_raster(str(file_path))
+        self.sar_meta = {
+            "case_id": self.case_id,
+            "filename": file_path.name,
+            "width": meta["width"],
+            "height": meta["height"],
+            "band_count": meta["band_count"],
+            "dtype": meta["dtype"],
+            "sensor": "Uploaded SAR image",
+            "acquisition_timestamp": self.spill_context.get("timestamp", "unknown"),
+            "status": "uploaded",
+        }
+
+        result = detect_slick(str(file_path))
+        geom = analyze_geometry(result["mask"], contrast_score=result["contrast_score"])
+        pixel_count = int(geom.get("pixel_count", 0))
+        confidence = round(float(geom.get("prototype_confidence", 0.0)), 3)
+
+        area_label = "N/A"
+        if geom.get("area_available"):
+            area_km2 = geom.get("area_km2")
+            if area_km2 is not None:
+                area_label = f"{float(area_km2):.4f} km²"
+        elif pixel_count:
+            area_label = f"{pixel_count} pixels"
+
+        self.detection_result = {
+            "status": result["status"],
+            "contrast_score": float(result["contrast_score"]),
+            "sensitivity": float(result["sensitivity"]),
+            "fallback_used": bool(result["fallback_used"]),
+        }
+        self.geometry_result = {
+            "pixel_count": pixel_count,
+            "centroid_pixel": geom.get("centroid_pixel"),
+            "shape_score": geom.get("shape_score"),
+            "area_score": geom.get("area_score"),
+            "prototype_confidence": confidence,
+            "area_available": bool(geom.get("area_available", False)),
+            "area_label": area_label,
+        }
+        self.spill_context.update({
+            "detector_status": result["status"],
+            "detector_confidence": confidence,
+            "confidence": confidence,
+            "detected_pixels": pixel_count,
+            "centroid_pixel": geom.get("centroid_pixel"),
+            "spill_area": area_label,
+            "area_label": area_label,
+        })
+        self.stage = "SLICK_DETECTED"
+
+        payload = {
+            "status": "ok",
+            "filename": file_path.name,
+            "detector_status": result["status"],
+            "contrast_score": float(result["contrast_score"]),
+            "confidence": confidence,
+            "spill_area": area_label,
+            "mask_pixels": pixel_count,
+            "fallback_used": bool(result["fallback_used"]),
+            "original_image": _tif_to_data_url(file_path),
+            "mask_image": _mask_to_data_url(result["mask"]),
+            "centroid_pixel": geom.get("centroid_pixel"),
+            "shape_score": float(geom.get("shape_score", 0.0)),
+            "area_score": float(geom.get("area_score", 0.0)),
+            "message": result["status"].replace("_", " ").title(),
+        }
+        return payload
 
     def step_1_sar_ingest(self) -> dict:
         from services.preprocessor import load_sar_raster
@@ -182,6 +351,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/workflow/run",
                 "/api/workflow/step",
                 "/api/workflow/reset",
+                "/api/detect-image",
             ],
         }, 404)
 
@@ -189,7 +359,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
         payload = {}
-        if length > 0:
+        request_body = self.rfile.read(length) if path == "/api/detect-image" else None
+        if length > 0 and request_body is None:
             try:
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
             except Exception:
@@ -226,6 +397,39 @@ class Handler(BaseHTTPRequestHandler):
                 return
             else:
                 self._send_json({"error": f"Invalid step {step}. Valid steps are 1, 2, 3, 4."}, 400)
+                return
+
+        if path == "/api/detect-image":
+            content_type = self.headers.get("Content-Type", "")
+            if "multipart/form-data" not in content_type:
+                self._send_json({"error": "Please upload a TIFF using multipart/form-data."}, 400)
+                return
+            try:
+                message = BytesParser(policy=default).parsebytes(
+                    f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode("utf-8")
+                    + (request_body or b"")
+                )
+                file_field = next(
+                    (part for part in message.iter_attachments() if part.get_param("name", header="content-disposition") == "file"),
+                    None,
+                )
+                filename = file_field.get_filename() if file_field else None
+                if file_field is None or not filename:
+                    self._send_json({"error": "No TIFF file was provided."}, 400)
+                    return
+                if not filename.lower().endswith((".tif", ".tiff")):
+                    self._send_json({"error": "Only .tif and .tiff files are supported."}, 400)
+                    return
+                upload_dir = ROOT / "tmp_uploads"
+                upload_dir.mkdir(exist_ok=True)
+                upload_path = upload_dir / Path(filename).name
+                with open(upload_path, "wb") as handle:
+                    handle.write(file_field.get_payload(decode=True) or b"")
+                response = SESSION.process_uploaded_image(upload_path, filename)
+                self._send_json(response)
+                return
+            except Exception as exc:
+                self._send_json({"error": f"Detection failed: {exc}"}, 400)
                 return
 
         self._send_json({"error": "Not found"}, 404)

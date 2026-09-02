@@ -93,6 +93,23 @@
     </div>
   </div>
 
+  <div class="upload-tiff-panel">
+    <div class="upload-tiff-header">
+      <div>
+        <div class="upload-label">📤 Upload SAR TIFF</div>
+        <div class="upload-subtext">Run the existing detector on a local .tif/.tiff image.</div>
+      </div>
+      <div class="upload-actions">
+        <label class="upload-file-picker" for="sar-upload-input">
+          <input type="file" id="sar-upload-input" accept=".tif,.tiff,image/tiff">
+          <span>Choose TIFF</span>
+        </label>
+        <button id="btn-upload-detect" class="btn-wf-run">Run Detector</button>
+      </div>
+    </div>
+    <div id="upload-result" class="upload-result"></div>
+  </div>
+
   <div class="detection-engine-grid" id="detection-engine">
     <!-- Populated dynamically via script.js -->
   </div>
