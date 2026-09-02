@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    SLICKTRACE AI — Professional Satellite Maritime Intelligence Theme
    Theme: Hybrid GIS Console (Dark Navy Structure + Crisp White/Light Workspace)
    ========================================================================== */
@@ -289,6 +289,110 @@ header.app-header {
   color: #94a3b8;
   font-size: 10px;
 }
+
+.wf-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-wf-run {
+  background: var(--blue-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.btn-wf-run:hover:not(:disabled) {
+  background: var(--blue-hover);
+  transform: translateY(-1px);
+}
+
+.btn-wf-run:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-wf-reset {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-wf-reset:hover {
+  background: #e2e8f0;
+  color: var(--text-dark);
+}
+
+.wf-pill.clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.wf-pill.clickable:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.wf-pill.running {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fcd34d !important;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3);
+  animation: wfPulse 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes wfPulse {
+  0% { transform: scale(0.97); opacity: 0.85; }
+  100% { transform: scale(1.03); opacity: 1; }
+}
+
+.wf-notice-banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-candidate-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
 
 /* ==========================================================================
    4. KPI Cards Grid (White Cards, Deep Navy Metric Text, Crisp Icons)

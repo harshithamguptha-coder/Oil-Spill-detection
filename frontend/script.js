@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    SLICKTRACE AI — Interactive Satellite GIS & Vessel Attribution Script
    ========================================================================== */
 
@@ -25,80 +25,347 @@ const API_BASE_URL = window.SLICKTRACE_API_BASE || 'http://127.0.0.1:8000';
 const apiUrl = path => `${API_BASE_URL}${path}`;
 
 // --------------------------------------------------------------------------
-// 1. Data Ingestion from Backend Endpoints
+// 1. Data Ingestion & State Synchronization from Backend
 // --------------------------------------------------------------------------
-Promise.all([
-  fetch(apiUrl('/api/context')).then(r => r.json()),
-  fetch(apiUrl('/api/candidates')).then(r => r.json()),
-  fetch(apiUrl('/api/tracks')).then(r => r.json()),
-  fetch(apiUrl('/api/config')).then(r => r.json())
-]).then(([s, c, t, cfg]) => {
-  spill = s;
-  candidates = c;
-  tracks = t;
-  selected = c[0] ? c[0].vessel_id : Object.keys(t)[0];
+let currentStage = 'VESSELS_RANKED';
 
-  // Populate Investigation Metadata
-  if ($('#meta-detect-status') && s.detector_status) {
-    $('#meta-detect-status').textContent = s.detector_status.replace(/_/g, ' ').toUpperCase();
+function setNotice(message, isError = false) {
+  const noticeEl = $('#wf-notice');
+  if (!noticeEl) return;
+  if (!message) {
+    noticeEl.style.display = 'none';
+    noticeEl.textContent = '';
+    return;
+  }
+  noticeEl.style.display = 'flex';
+  noticeEl.style.borderColor = isError ? '#fca5a5' : '#fde68a';
+  noticeEl.style.backgroundColor = isError ? '#fef2f2' : '#fffbeb';
+  noticeEl.style.color = isError ? '#991b1b' : '#92400e';
+  noticeEl.innerHTML = (isError ? '⚠️ ' : 'ℹ️ ') + esc(message);
+}
+
+function updateWorkflowPills(stage) {
+  currentStage = stage;
+  const pills = [
+    { id: '#wf-step-1', name: '1. SAR Ingest', passedStages: ['SAR_INGESTED', 'SLICK_DETECTED', 'AIS_CORRELATED', 'VESSELS_RANKED'], currentStage: 'SAR_INGESTED' },
+    { id: '#wf-step-2', name: '2. Slick Mask', passedStages: ['SLICK_DETECTED', 'AIS_CORRELATED', 'VESSELS_RANKED'], currentStage: 'SLICK_DETECTED' },
+    { id: '#wf-step-3', name: '3. AIS Intercept', passedStages: ['AIS_CORRELATED', 'VESSELS_RANKED'], currentStage: 'AIS_CORRELATED' },
+    { id: '#wf-step-4', name: '4. Attribution Rank', passedStages: ['VESSELS_RANKED'], currentStage: 'VESSELS_RANKED' }
+  ];
+
+  pills.forEach((p) => {
+    const el = $(p.id);
+    if (!el) return;
+    el.classList.remove('passed', 'current', 'running');
+
+    if (stage === 'NOT_STARTED') {
+      el.innerHTML = p.name;
+    } else if (p.passedStages.includes(stage)) {
+      if (stage === p.currentStage) {
+        el.classList.add('current');
+        el.innerHTML = `<span>★</span> ${p.name}`;
+      } else {
+        el.classList.add('passed');
+        el.innerHTML = `<span>✓</span> ${p.name}`;
+      }
+    } else {
+      el.innerHTML = p.name;
+    }
+  });
+
+  const statusEl = $('#meta-investigation-status');
+  if (statusEl) {
+    if (stage === 'VESSELS_RANKED') {
+      statusEl.textContent = 'ATTRIBUTION ACTIVE';
+      statusEl.style.color = 'var(--cyan-bright)';
+    } else if (stage === 'NOT_STARTED') {
+      statusEl.textContent = 'INVESTIGATION PENDING';
+      statusEl.style.color = 'var(--text-light-muted)';
+    } else {
+      statusEl.textContent = stage.replace(/_/g, ' ');
+      statusEl.style.color = 'var(--risk-med)';
+    }
+  }
+}
+
+async function syncUIWithSession(data) {
+  currentStage = data.stage;
+  spill = data.spill;
+  updateWorkflowPills(data.stage);
+
+  if (data.stage === 'AIS_CORRELATED' || data.stage === 'VESSELS_RANKED') {
+    const [cRes, tRes] = await Promise.all([
+      fetch(apiUrl('/api/candidates')).then(r => r.json()),
+      fetch(apiUrl('/api/tracks')).then(r => r.json())
+    ]);
+    candidates = cRes;
+    tracks = tRes;
+    if (!selected || !tracks[selected]) {
+      selected = candidates[0] ? candidates[0].vessel_id : Object.keys(tracks)[0];
+    }
+  } else {
+    candidates = [];
+    tracks = {};
+    selected = null;
+  }
+
+  // Update Status Bar
+  if ($('#meta-case-id')) {
+    $('#meta-case-id').textContent = data.case_id || 'SAR-2026-01339';
+  }
+  if ($('#meta-detect-status')) {
+    if (data.stage === 'NOT_STARTED' || data.stage === 'SAR_INGESTED') {
+      $('#meta-detect-status').textContent = 'NOT RUN';
+      $('#meta-detect-status').className = 'status-chip';
+    } else {
+      $('#meta-detect-status').textContent = (spill.detector_status || 'NOT RUN').replace(/_/g, ' ').toUpperCase();
+      $('#meta-detect-status').className = (spill.detector_status === 'suspected_slick_detected') ? 'status-chip danger' : 'status-chip';
+    }
   }
   if ($('#meta-ais-count')) {
-    $('#meta-ais-count').textContent = `${c.length} VESSELS CORRELATED`;
+    if (data.stage === 'NOT_STARTED' || data.stage === 'SAR_INGESTED' || data.stage === 'SLICK_DETECTED') {
+      $('#meta-ais-count').textContent = 'AWAITING INTERCEPT';
+      $('#meta-ais-count').className = 'status-chip';
+    } else {
+      $('#meta-ais-count').textContent = `${candidates.length} VESSELS CORRELATED`;
+      $('#meta-ais-count').className = 'status-chip cyan';
+    }
   }
 
-  // Populate KPI Summary Cards
-  renderKPICards(s);
+  // Update KPI Cards
+  renderKPICards(spill, data.stage);
 
-  // Populate Replay Vessel Dropdown
+  // Update Leaflet Map Layers
+  if (map) {
+    updateMapForStage(data.stage);
+  }
+
+  // Update Replay Vessel Selector
   const vesselSelect = $('#vessel');
-  vesselSelect.innerHTML = c.map(x => `<option value="${x.vessel_id}">${esc(x.vessel_name)} (${x.vessel_id})</option>`).join('');
-  if (selected && tracks[selected]) {
+  if (vesselSelect) {
+    vesselSelect.innerHTML = candidates.map(x => `<option value="${x.vessel_id}">${esc(x.vessel_name)} (${x.vessel_id})</option>`).join('');
+    if (selected) vesselSelect.value = selected;
+  }
+  if (selected && tracks[selected] && $('#time')) {
     $('#time').max = tracks[selected].length - 1;
+    $('#time').value = 0;
   }
 
-  // Initialize Leaflet Interactive GIS Map
-  initLeafletMap(s, c, t);
-
-  // Setup Event Listeners
-  initEventListeners();
-
-  // Render Table & Evidence
+  // Render Table & Forensic Breakdown
   render();
-}).catch(err => {
-  console.error('Error loading investigation data:', err);
-});
+}
+
+function updateMapForStage(stage) {
+  if (!map) return;
+  if (layerGroups.radius) layerGroups.radius.clearLayers();
+  if (layerGroups.spill) layerGroups.spill.clearLayers();
+  if (layerGroups.tracks) layerGroups.tracks.clearLayers();
+  if (layerGroups.replay) layerGroups.replay.clearLayers();
+
+  if (stage === 'NOT_STARTED' || stage === 'SAR_INGESTED') {
+    return;
+  }
+
+  // Step 2 Slick Mask: draw spill origin and polygon
+  if (stage === 'SLICK_DETECTED' || stage === 'AIS_CORRELATED' || stage === 'VESSELS_RANKED') {
+    if (spill) {
+      if (spill.polygon && spill.polygon.length > 2) {
+        L.polygon(spill.polygon, {
+          color: '#dc2626',
+          weight: 2,
+          dashArray: '4, 4',
+          fillColor: '#ef4444',
+          fillOpacity: 0.25
+        }).bindPopup(`<b>Estimated Slick Extent</b><br>Area: ${spill.area} ${spill.area_unit}<br>Confidence: ${Math.round(spill.confidence * 100)}%`).addTo(layerGroups.spill);
+      }
+
+      const spillIcon = L.divIcon({
+        className: 'custom-spill-div-icon',
+        html: '<div class="spill-origin-pulse"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      L.marker([spill.latitude, spill.longitude], { icon: spillIcon })
+        .bindPopup(`<b>🛢️ Estimated Spill Origin</b><br>Lat: ${spill.latitude.toFixed(4)}°, Lon: ${spill.longitude.toFixed(4)}°<br>Acquisition: ${spill.timestamp.replace('T', ' ').replace('Z', ' UTC')}`)
+        .addTo(layerGroups.spill);
+    }
+  }
+
+  // Step 3 & 4 AIS: draw search radius and tracks
+  if (stage === 'AIS_CORRELATED' || stage === 'VESSELS_RANKED') {
+    if (spill) {
+      const searchRadiusMeters = 15000;
+      L.circle([spill.latitude, spill.longitude], {
+        radius: searchRadiusMeters,
+        color: '#0284c7',
+        weight: 1.5,
+        dashArray: '6, 6',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.08
+      }).bindTooltip('15 km Investigation Perimeter', { direction: 'top' }).addTo(layerGroups.radius);
+    }
+
+    if (candidates && candidates.length && tracks) {
+      drawVesselTracks(candidates, tracks);
+      updateReplayPosition();
+    }
+  }
+}
+
+async function runWorkflowStep(stepNum) {
+  setNotice('');
+  if (stepNum === 2 && currentStage === 'NOT_STARTED') {
+    setNotice('Prerequisite: Execute Step 1 (SAR Ingest) before Step 2.', true);
+    return false;
+  }
+  if (stepNum === 3 && (currentStage === 'NOT_STARTED' || currentStage === 'SAR_INGESTED')) {
+    setNotice('Prerequisite: Execute Step 2 (Slick Mask) before Step 3.', true);
+    return false;
+  }
+  if (stepNum === 4 && (currentStage !== 'AIS_CORRELATED' && currentStage !== 'VESSELS_RANKED')) {
+    setNotice('Prerequisite: Execute Step 3 (AIS Intercept) before Step 4.', true);
+    return false;
+  }
+
+  const pillEl = $(`#wf-step-${stepNum}`);
+  if (pillEl) pillEl.classList.add('running');
+
+  try {
+    const res = await fetch(apiUrl('/api/workflow/step'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step: stepNum })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      setNotice(data.error || `Step ${stepNum} failed`, true);
+      if (pillEl) pillEl.classList.remove('running');
+      return false;
+    }
+
+    await syncUIWithSession(data);
+    return true;
+  } catch (err) {
+    setNotice(`Workflow request error: ${err.message}`, true);
+    if (pillEl) pillEl.classList.remove('running');
+    return false;
+  }
+}
+
+async function runFullInvestigation() {
+  setNotice('');
+  const runBtn = $('#btn-run-workflow');
+  if (runBtn) {
+    runBtn.disabled = true;
+    runBtn.innerHTML = '⏳ In Progress...';
+  }
+
+  try {
+    const s1 = await runWorkflowStep(1);
+    if (!s1) throw new Error('SAR Ingest stage failed');
+    await new Promise(r => setTimeout(r, 450));
+
+    const s2 = await runWorkflowStep(2);
+    if (!s2) throw new Error('Slick Mask detection stage failed');
+    await new Promise(r => setTimeout(r, 450));
+
+    const s3 = await runWorkflowStep(3);
+    if (!s3) throw new Error('AIS Intercept correlation stage failed');
+    await new Promise(r => setTimeout(r, 450));
+
+    const s4 = await runWorkflowStep(4);
+    if (!s4) throw new Error('Attribution Rank stage failed');
+
+    setNotice('Investigation completed: Top Candidate identified with explainable multi-factor attribution score.');
+  } catch (err) {
+    setNotice(`Investigation pipeline stopped: ${err.message}`, true);
+  } finally {
+    if (runBtn) {
+      runBtn.disabled = false;
+      runBtn.innerHTML = '⚡ Run Investigation';
+    }
+  }
+}
+
+async function resetInvestigation() {
+  setNotice('');
+  pauseReplay();
+  try {
+    const res = await fetch(apiUrl('/api/workflow/reset'), { method: 'POST' });
+    const data = await res.json();
+    await syncUIWithSession(data);
+    setNotice('Investigation reset to initial state. Click "⚡ Run Investigation" or Step 1 to begin.');
+  } catch (err) {
+    setNotice(`Reset error: ${err.message}`, true);
+  }
+}
+
+async function initInvestigation() {
+  try {
+    const [state, cand, trk] = await Promise.all([
+      fetch(apiUrl('/api/state')).then(r => r.json()),
+      fetch(apiUrl('/api/candidates')).then(r => r.json()),
+      fetch(apiUrl('/api/tracks')).then(r => r.json())
+    ]);
+
+    spill = state.spill;
+    candidates = cand;
+    tracks = trk;
+    currentStage = state.stage || 'VESSELS_RANKED';
+    selected = candidates[0] ? candidates[0].vessel_id : Object.keys(tracks)[0];
+
+    // Initialize Leaflet Map
+    initLeafletMap(spill, candidates, tracks);
+
+    // Setup Event Listeners
+    initEventListeners();
+
+    // Synchronize UI
+    await syncUIWithSession(state);
+  } catch (err) {
+    console.error('Error initializing investigation:', err);
+    setNotice(`Backend communication failure: Ensure backend is running at ${API_BASE_URL}`, true);
+  }
+}
+
+// Start application
+initInvestigation();
 
 // --------------------------------------------------------------------------
 // 2. KPI Cards Rendering
 // --------------------------------------------------------------------------
-function renderKPICards(s) {
+function renderKPICards(s, stage = currentStage) {
   const infoContainer = $('#info');
   if (!infoContainer) return;
+
+  const isIngested = stage && stage !== 'NOT_STARTED';
+  const isDetected = stage && ['SLICK_DETECTED', 'AIS_CORRELATED', 'VESSELS_RANKED'].includes(stage);
 
   const kpis = [
     {
       title: 'Spill Location',
-      val: `${s.latitude.toFixed(4)}° N, ${s.longitude.toFixed(4)}° E`,
-      sub: 'Geographic Origin Anchor',
+      val: isDetected ? `${s.latitude.toFixed(4)}° N, ${s.longitude.toFixed(4)}° E` : (isIngested ? '18.9524° N, 72.8837° E' : 'Pending Ingest'),
+      sub: 'Geographic Origin Anchor (DEMO)',
       symbol: '🎯'
     },
     {
       title: 'Spill Area',
-      val: `${s.area} ${s.area_unit}`,
-      sub: 'Cleaned Spatial Mask Extent',
+      val: isDetected ? `${s.area} ${s.area_unit}` : (isIngested ? 'Awaiting Mask' : 'Pending Ingest'),
+      sub: isDetected ? 'Cleaned Spatial Mask Extent' : 'Detection Mask Extent',
       symbol: '📐'
     },
     {
       title: 'Detection Confidence',
-      val: `${Math.round(s.confidence * 100)}%`,
+      val: isDetected ? `${Math.round(s.confidence * 100)}%` : (isIngested ? 'Awaiting Mask' : 'Pending Ingest'),
       sub: 'SAR Multi-Feature Composite',
       symbol: '🛡️',
-      hasBar: true,
-      pct: Math.round(s.confidence * 100)
+      hasBar: isDetected,
+      pct: isDetected ? Math.round(s.confidence * 100) : 0
     },
     {
       title: 'Detection Time',
-      val: s.timestamp.replace('T', ' ').replace('Z', ' UTC'),
+      val: isIngested ? s.timestamp.replace('T', ' ').replace('Z', ' UTC') : 'Pending Ingest',
       sub: 'Sentinel-1 SAR Acquisition',
       symbol: '⏱️'
     }
@@ -138,23 +405,17 @@ function initLeafletMap(s, c, t) {
 
   // Define Legitimate Basemap Providers
   basemaps = {
-    light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    light: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }),
     sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, GIS Community',
       maxZoom: 18
-    }),
-    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
     })
   };
 
-  // Add Default Light Basemap
+  // Add Default Basemap (Map)
   currentBasemap = basemaps.light.addTo(map);
 
   // Initialize Layer Groups
@@ -314,7 +575,18 @@ function updateReplayPosition() {
 // 6. Main UI Render (Table & Evidence Breakdown)
 // --------------------------------------------------------------------------
 function render() {
-  if (!spill || !candidates || !candidates.length) return;
+  const tbody = $('#rows');
+  const evidenceContainer = $('#evidence');
+
+  if (!candidates || !candidates.length) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px 16px; font-size: 13px;">Awaiting Attribution Rank. Click <b>"⚡ Run Investigation"</b> or Step 4 above.</td></tr>`;
+    }
+    if (evidenceContainer) {
+      evidenceContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 16px; font-size: 13px;">Forensic evidence decomposition will appear once Attribution Rank executes.</div>`;
+    }
+    return;
+  }
 
   // Update Column Header Sort Indicators
   document.querySelectorAll('th[data-k]').forEach(th => {
@@ -331,9 +603,8 @@ function render() {
   });
 
   // Render Table Rows
-  const tbody = $('#rows');
   tbody.innerHTML = ordered.map(c => {
-    const originalRank = candidates.indexOf(c) + 1;
+    const originalRank = c.rank || (candidates.indexOf(c) + 1);
     const isSelected = c.vessel_id === selected;
     const isTop = originalRank === 1;
 
@@ -356,7 +627,8 @@ function render() {
   // Render Evidence & Score Decomposition Panel
   const c = candidates.find(x => x.vessel_id === selected) || candidates[0];
   const b = c.score_breakdown;
-  const rankNum = candidates.indexOf(c) + 1;
+  const rankNum = c.rank || (candidates.indexOf(c) + 1);
+  const isTopCandidate = (c.is_top_candidate || rankNum === 1);
 
   const distPts = (b.distance * 0.30).toFixed(1);
   const timePts = (b.time * 0.25).toFixed(1);
@@ -367,6 +639,7 @@ function render() {
   $('#evidence').innerHTML = `
     <div class="evidence-hero-box">
       <div class="vessel-hero-summary">
+        ${isTopCandidate ? '<div class="top-candidate-badge">★ TOP CANDIDATE (INVESTIGATIVE PRIORITIZATION ONLY)</div>' : ''}
         <h3>${esc(c.vessel_name)} <span class="risk-tag ${c.risk}">${c.risk} RISK</span></h3>
         <div class="vessel-telemetry">Rank #${rankNum} · IMO: ${c.vessel_id} · Speed: ${c.speed.toFixed(1)} kn · Heading: ${c.heading.toFixed(0)}°</div>
       </div>
@@ -482,6 +755,23 @@ window.pick = pick;
 // 8. Event Listeners Initialization
 // --------------------------------------------------------------------------
 function initEventListeners() {
+  // Workflow Control Actions
+  if ($('#btn-run-workflow')) {
+    $('#btn-run-workflow').onclick = () => runFullInvestigation();
+  }
+
+  if ($('#btn-reset-workflow')) {
+    $('#btn-reset-workflow').onclick = () => resetInvestigation();
+  }
+
+  // Workflow Step Pills
+  for (let i = 1; i <= 4; i++) {
+    const pill = $(`#wf-step-${i}`);
+    if (pill) {
+      pill.onclick = () => runWorkflowStep(i);
+    }
+  }
+
   // Table Sorting Handlers
   document.querySelectorAll('th[data-k]').forEach(th => {
     th.onclick = () => {

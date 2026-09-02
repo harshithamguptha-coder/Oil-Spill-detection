@@ -20,7 +20,17 @@ def get_spill_context(image_path: str | Path | None = None) -> dict:
             from services.geometry import analyze_geometry
             result = detect_slick(str(image_path))
             geom = analyze_geometry(result["mask"], contrast_score=result["contrast_score"])
-            context.update({"detector_status": result["status"], "detector_confidence": round(geom["prototype_confidence"], 3), "detected_pixels": geom["pixel_count"]})
+            context.update({
+                "detector_status": result["status"],
+                "detector_confidence": round(geom["prototype_confidence"], 3),
+                "confidence": round(geom["prototype_confidence"], 3),
+                "detected_pixels": geom["pixel_count"],
+                "centroid_pixel": geom["centroid_pixel"],
+                "pixel_polygon": geom["polygon"],
+                "shape_score": geom["shape_score"],
+                "area_score": geom["area_score"],
+                "contrast_score": result["contrast_score"],
+            })
         except Exception as exc:
             context["detector_status"] = f"unavailable: {type(exc).__name__}"
     return context

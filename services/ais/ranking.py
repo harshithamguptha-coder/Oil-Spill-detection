@@ -26,4 +26,9 @@ def rank_vessels(tracks: dict, spill: dict, radius_km: float=SEARCH_RADIUS_KM, t
         reasons=[f"{c['closest_distance_km']:.1f} km from estimated origin",f"Closest pass {c['time_gap_minutes']:.0f} minutes from detection",f"Track alignment {c['track_alignment']:.0f}%"]
         if flags: reasons.append("Unusual AIS behaviour detected: "+", ".join(flags))
         results.append({"vessel_id":vessel_id,"vessel_name":closest["vessel_name"],"final_score":final,"risk":"HIGH" if final>=80 else "MEDIUM" if final>=60 else "LOW","speed":closest["speed"],"heading":closest["heading"],"score_breakdown":scores,"reasons":reasons,"ais_flags":flags,**c})
-    return sorted(results,key=lambda x:x["final_score"],reverse=True)
+    sorted_results = sorted(results,key=lambda x:x["final_score"],reverse=True)
+    for i, item in enumerate(sorted_results):
+        item["rank"] = i + 1
+        item["is_top_candidate"] = (i == 0)
+        item["candidate_label"] = "Top Candidate" if i == 0 else f"Candidate #{i+1}"
+    return sorted_results

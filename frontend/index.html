@@ -52,25 +52,33 @@
       </div>
       <div class="status-metric">
         <span class="metric-tag">Status:</span>
-        <span class="metric-data" style="color: var(--cyan-bright);">ATTRIBUTION ACTIVE</span>
+        <span class="metric-data" id="meta-investigation-status" style="color: var(--cyan-bright);">ATTRIBUTION ACTIVE</span>
       </div>
     </section>
 
     <!-- 3. Workflow Progression Strip -->
     <section class="workflow-strip" aria-label="Investigation Workflow">
       <span class="wf-header-title">Workflow:</span>
-      <div class="wf-pill passed"><span>✓</span> 1. SAR Ingest</div>
+      <div class="wf-pill passed clickable" id="wf-step-1" data-step="1" title="Execute Step 1: SAR Ingest"><span>✓</span> 1. SAR Ingest</div>
       <span class="wf-connector">➔</span>
-      <div class="wf-pill passed"><span>✓</span> 2. Slick Mask</div>
+      <div class="wf-pill passed clickable" id="wf-step-2" data-step="2" title="Execute Step 2: Slick Mask"><span>✓</span> 2. Slick Mask</div>
       <span class="wf-connector">➔</span>
-      <div class="wf-pill passed"><span>✓</span> 3. AIS Intercept</div>
+      <div class="wf-pill passed clickable" id="wf-step-3" data-step="3" title="Execute Step 3: AIS Intercept"><span>✓</span> 3. AIS Intercept</div>
       <span class="wf-connector">➔</span>
-      <div class="wf-pill current"><span>★</span> 4. Attribution Rank</div>
+      <div class="wf-pill current clickable" id="wf-step-4" data-step="4" title="Execute Step 4: Attribution Rank"><span>★</span> 4. Attribution Rank</div>
       <span class="wf-connector">➔</span>
-      <div class="wf-pill">5. Drift Forecast</div>
+      <div class="wf-pill" id="wf-step-5">5. Drift Forecast</div>
       <span class="wf-connector">➔</span>
-      <div class="wf-pill">6. Evidence Report</div>
+      <div class="wf-pill" id="wf-step-6">6. Evidence Report</div>
+
+      <div class="wf-actions">
+        <button id="btn-run-workflow" class="btn-wf-run" title="Execute full investigation pipeline sequentially">⚡ Run Investigation</button>
+        <button id="btn-reset-workflow" class="btn-wf-reset" title="Reset investigation to initial stage">↺ Reset</button>
+      </div>
     </section>
+
+    <!-- Prerequisite / Workflow Notice Banner -->
+    <div id="wf-notice" class="wf-notice-banner" style="display: none;"></div>
 
     <!-- 4. KPI Summary Cards Grid -->
     <section class="kpi-row" id="info">
@@ -93,9 +101,8 @@
         <div class="map-toolbar">
           <div class="map-basemap-selector">
             <span>Basemap:</span>
-            <button class="btn-basemap active" id="btn-bm-light" data-bm="light">Light Map</button>
+            <button class="btn-basemap active" id="btn-bm-light" data-bm="light">Map</button>
             <button class="btn-basemap" id="btn-bm-sat" data-bm="sat">Satellite</button>
-            <button class="btn-basemap" id="btn-bm-dark" data-bm="dark">Dark Map</button>
           </div>
 
           <div class="map-layer-toggles">
@@ -223,19 +230,9 @@
     </div>
 
     <!-- 6. Legal / Investigation Disclaimer Banner -->
-    <div class="legal-disclaimer-card">
-      <div class="legal-disclaimer-icon">⚠️</div>
-      <div class="legal-disclaimer-text">
-        <strong>LEGAL &amp; INVESTIGATION NOTICE</strong>
-        Attribution scores represent heuristic spatio-temporal correlation derived from satellite SAR observations and AIS positional broadcasts for investigative prioritization. They provide objective decision support for maritime authorities and do not establish formal legal liability or proof of regulatory violation.
-      </div>
-    </div>
-
+   
     <!-- 7. Footer -->
-    <footer class="app-footer">
-      <div>SLICKTRACE AI v2.4 · Powered by OrbitalWatch Intelligence Platform</div>
-      <div>Offline Edge Architecture · SIH 2026 Demonstration</div>
-    </footer>
+    
 
   </div>
 
