@@ -30,6 +30,8 @@ def get_spill_context(image_path: str | Path | None = None) -> dict:
                 "shape_score": geom["shape_score"],
                 "area_score": geom["area_score"],
                 "contrast_score": result["contrast_score"],
+                "detection_sensitivity": result["sensitivity"],
+                "fallback_used": result["fallback_used"],
             })
         except Exception as exc:
             context["detector_status"] = f"unavailable: {type(exc).__name__}"
