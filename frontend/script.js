@@ -1002,7 +1002,20 @@ async function uploadSARImage() {
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Detection request failed.');
     renderUploadResult(data);
-    spill = Object.assign({}, spill || {}, { detector_status: data.detector_status, confidence: data.confidence, detector_confidence: data.confidence, detected_pixels: data.mask_pixels, area: data.spill_area, area_unit: data.spill_area.includes('km²') ? 'km²' : 'pixels' });
+    spill = {
+      ...spill,
+      detector_status: data.detector_status,
+      detector_confidence: data.detector_confidence ?? data.confidence,
+      detected_pixels: data.detected_pixels ?? data.mask_pixels,
+      shape_score: data.shape_score,
+      area_score: data.area_score,
+      detection_sensitivity: data.detection_sensitivity,
+      fallback_used: data.fallback_used,
+      centroid_pixel: data.centroid_pixel,
+      contrast_score: data.contrast_score,
+      confidence: data.confidence,
+      spill_area: data.spill_area
+    };
     renderDetectionEngine(spill);
     setNotice('Uploaded ' + file.name + ': ' + data.detector_status.replace(/_/g, ' ') + '. ' + (data.spill_area ? 'Area: ' + data.spill_area : ''));
   } catch (err) {
